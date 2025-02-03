@@ -14,6 +14,7 @@ import greenMarker from "../../../assets/images/marker-green.png";
 import yellowMarker from "../../../assets/images/marker-yellow.png";
 import redMarker from "../../../assets/images/marker-red.png";
 import SensorDrawer from "../../../components/AdminMonitoring/SensorDrawer";
+import Legend from "../../../components/Monitoring/Legend";
 
 const AdminMonitoring = () => {
   return (
@@ -69,6 +70,7 @@ const AdminMonitoring = () => {
             })}
           </MarkerClusterer>
         </Map>
+        <Legend />
       </Stack>
     </Stack>
   );

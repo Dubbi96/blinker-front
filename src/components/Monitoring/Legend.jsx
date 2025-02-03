@@ -18,7 +18,7 @@ const Legend = () => {
         position: "absolute",
         bottom: "30px",
         left: "15px",
-        zIndex: 2,
+        zIndex: 1,
       }}
     >
       <Typography sx={{ fontSize: "14px" }}>범례</Typography>
