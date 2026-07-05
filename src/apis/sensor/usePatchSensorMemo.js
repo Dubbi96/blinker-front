@@ -15,8 +15,15 @@ export const usePatchSensorMemo = (sensorId, appUserId) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: patchSensorMemo,
-    onSuccess: () => {
-      queryClient.invalidateQueries(["sensor", "detail", sensorId, appUserId]);
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [
+          "sensor",
+          "detail",
+          variables?.sensorId ?? sensorId,
+          variables?.appUserId ?? appUserId,
+        ],
+      });
     },
   });
 };

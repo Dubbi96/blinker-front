@@ -1,11 +1,10 @@
-import { getCookies } from "@apis/auth/cookie";
 import { useGetSensorDetail } from "@apis/sensor/useGetSensorDetails";
 import { usePatchSensorMemo } from "@apis/sensor/usePatchSensorMemo";
 import { Button, CircularProgress, Stack, Typography } from "@mui/material";
 import { theme } from "@styles/theme";
 import { showToast } from "@utils/toast";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 
 const InfoWindow = ({
@@ -15,25 +14,29 @@ const InfoWindow = ({
   handleClickOffDraggable,
   handleSaveNewPosition,
 }) => {
-  const appUserId = getCookies("appUserId");
   const selectedSensor = useSelector((state) => state.selectedSensor);
   const selectedUser = useSelector((state) => state.selectedUser);
+  const appUserId = selectedUser?.appUserId;
   const { data: sensor } = useGetSensorDetail(
-    selectedSensor.sensorId,
-    selectedUser.appUserId
+    selectedSensor?.sensorId,
+    appUserId
   );
   const [memo, setMemo] = useState(sensor?.memo);
   const { mutateAsync: patchSensorMemo } = usePatchSensorMemo(
-    selectedSensor.sensorId,
+    selectedSensor?.sensorId,
     appUserId
   );
+
+  useEffect(() => {
+    setMemo(sensor?.memo ?? "");
+  }, [selectedSensor?.sensorId, sensor?.memo]);
 
   const handleChangeMemo = (e) => {
     setMemo(e.target.value);
   };
 
   const handleKeyDown = async (e) => {
-    if (e.keyCode === 13) {
+    if (e.keyCode === 13 && selectedSensor?.sensorId && appUserId) {
       await patchSensorMemo({
         sensorId: selectedSensor.sensorId,
         appUserId,
@@ -71,7 +74,7 @@ const InfoWindow = ({
     borderRadius: "8px",
   };
 
-  if (!selectedSensor.sensorId || !appUserId || !sensor) {
+  if (!selectedSensor?.sensorId || !appUserId || !sensor) {
     return (
       <Stack sx={placeholderStyles}>
         <CircularProgress size={15} />

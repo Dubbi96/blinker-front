@@ -13,7 +13,8 @@ export const usePatchSensorGroupsOrder = () => {
   return useMutation({
     mutationFn: patchSensorGroupsOrder,
     onSuccess: () => {
-      queryClient.invalidateQueries(["sensor", "groups"]);
+      queryClient.invalidateQueries({ queryKey: ["sensor", "groups"] });
+      queryClient.invalidateQueries({ queryKey: ["user", "sensor", "groups"] });
     },
   });
 };

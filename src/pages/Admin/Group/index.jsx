@@ -6,13 +6,14 @@ import UserInfo from "@pages/Admin/Group/components/UserInfo";
 import SensorList from "@pages/Admin/Group/components/SensorList";
 import UnregisteredSensorList from "@pages/Admin/Group/components/UnregisteredSensorList";
 import { theme } from "@styles/theme";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CreateUserDialog from "@pages/Admin/Group/components/CreateUserDialog";
 import { useGetUsers } from "@apis/auth/useGetUsers";
 import { usePostSensorGroupToUser } from "@apis/app-user/usePostSensorGroupToUser";
 import { useDeleteSensorGroupFromUser } from "@apis/app-user/useDeleteSensorGroupFromUser";
 import { showToast } from "@utils/toast";
-import { useSelector } from "react-redux";
+import { resetSelectedSensor } from "@store/selectedSensorSlice";
+import { useDispatch, useSelector } from "react-redux";
 
 const Group = () => {
   const [openCreateUserDialog, setOpenCreateUserDialog] = useState(false);
@@ -23,24 +24,36 @@ const Group = () => {
   const handleCloseCreateUserDialog = () => setOpenCreateUserDialog(false);
 
   const { data: users } = useGetUsers();
+  const dispatch = useDispatch();
   const selectedSensor = useSelector((state) => state.selectedSensor);
   const selectedUser = useSelector((state) => state.selectedUser);
+  const [selectedSensorGroupId, setSelectedSensorGroupId] = useState(null);
+  const selectedRegisteredGroupId =
+    selectedSensor?.sensorGroupId ?? selectedSensorGroupId;
   const { mutateAsync: postSensorGroupToUser } = usePostSensorGroupToUser();
   const { mutateAsync: deleteSensorGroupFromUser } =
     useDeleteSensorGroupFromUser();
 
+  useEffect(() => {
+    setSelectedSensorGroupId(null);
+    setUnregisteredSensor(null);
+    dispatch(resetSelectedSensor());
+  }, [selectedUser?.appUserId, dispatch]);
+
   const handleClickArrowForward = async () => {
     if (!selectedUser) showToast.error("유저를 선택해주세요.");
-    else if (!selectedSensor)
-      showToast.error("등록을 해제할 센서를 선택해주세요.");
+    else if (!selectedRegisteredGroupId)
+      showToast.error("등록을 해제할 센서 그룹을 선택해주세요.");
     else {
       try {
         await deleteSensorGroupFromUser({
           appUserId: selectedUser.appUserId,
-          sensorGroupId: selectedSensor.sensorGroupId,
+          sensorGroupId: selectedRegisteredGroupId,
         }).then((data) => {
           if (data.code === "SUCCESS") {
             showToast.success("등록 해제되었습니다.");
+            dispatch(resetSelectedSensor());
+            setSelectedSensorGroupId(null);
           }
         });
       } catch (error) {
@@ -61,6 +74,7 @@ const Group = () => {
         }).then((data) => {
           if (data.code === "SUCCESS") {
             showToast.success("등록되었습니다.");
+            setUnregisteredSensor(null);
           }
         });
       } catch (error) {
@@ -79,7 +93,11 @@ const Group = () => {
       />
       <Stack>
         <UserInfo />
-        <SensorList setUnregisteredSensor={setUnregisteredSensor} />
+        <SensorList
+          selectedSensorGroupId={selectedSensorGroupId}
+          setSelectedSensorGroupId={setSelectedSensorGroupId}
+          setUnregisteredSensor={setUnregisteredSensor}
+        />
       </Stack>
       <Stack
         sx={{
@@ -106,7 +124,10 @@ const Group = () => {
       </Stack>
       <UnregisteredSensorList
         unregisteredSensor={unregisteredSensor}
-        setUnregisteredSensor={setUnregisteredSensor}
+        setUnregisteredSensor={(sensor) => {
+          setSelectedSensorGroupId(null);
+          setUnregisteredSensor(sensor);
+        }}
       />
       <CreateUserDialog
         open={openCreateUserDialog}

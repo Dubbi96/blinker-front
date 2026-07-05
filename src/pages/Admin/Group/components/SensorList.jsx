@@ -6,12 +6,19 @@ import {
 import Title from "@components/Title";
 import { Star } from "@mui/icons-material";
 import { Stack } from "@mui/material";
-import { setSelectedSensorState } from "@store/selectedSensorSlice";
+import {
+  resetSelectedSensor,
+  setSelectedSensorState,
+} from "@store/selectedSensorSlice";
 import { palette } from "@styles/palette";
 import { theme } from "@styles/theme";
 import { useDispatch, useSelector } from "react-redux";
 
-const SensorList = ({ setUnregisteredSensor }) => {
+const SensorList = ({
+  selectedSensorGroupId,
+  setSelectedSensorGroupId,
+  setUnregisteredSensor,
+}) => {
   const selectedSensor = useSelector((state) => state.selectedSensor);
   const selectedUser = useSelector((state) => state.selectedUser);
   const dispatch = useDispatch();
@@ -21,7 +28,14 @@ const SensorList = ({ setUnregisteredSensor }) => {
 
   const handleClickSensor = (sensor) => {
     dispatch(setSelectedSensorState(sensor));
-    setUnregisteredSensor();
+    setSelectedSensorGroupId(null);
+    setUnregisteredSensor(null);
+  };
+
+  const handleClickSensorGroup = (group) => {
+    dispatch(resetSelectedSensor());
+    setSelectedSensorGroupId(group.sensorGroupId);
+    setUnregisteredSensor(null);
   };
 
   return (
@@ -54,15 +68,24 @@ const SensorList = ({ setUnregisteredSensor }) => {
             }}
           >
             {sensorGroups?.map((group) => {
+              const selectedGroup =
+                selectedSensorGroupId === group.sensorGroupId &&
+                !selectedSensor;
               return (
                 <Stack key={group.sensorGroupId}>
                   <Stack
                     sx={{
                       ...TableRowStyle,
+                      backgroundColor: selectedGroup
+                        ? theme.palette.action.selected
+                        : "white",
                       "&:hover": {
-                        backgroundColor: "none",
+                        backgroundColor: selectedGroup
+                          ? theme.palette.action.selected
+                          : theme.palette.action.hover,
                       },
                     }}
+                    onClick={() => handleClickSensorGroup(group)}
                   >
                     <Stack sx={{ width: "30px", maxWidth: "30px" }}>
                       {group.order}

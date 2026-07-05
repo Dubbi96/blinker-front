@@ -12,5 +12,6 @@ export const useGetSensorDetail = (sensorId, appUserId) => {
   return useQuery({
     queryKey: ["sensor", "detail", sensorId, appUserId],
     queryFn: () => getSensorDetail(sensorId, appUserId),
+    enabled: !!sensorId && !!appUserId,
   });
 };

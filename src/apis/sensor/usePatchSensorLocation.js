@@ -15,8 +15,11 @@ export const usePatchSensorLocation = (sensorId, appUserId) => {
   return useMutation({
     mutationFn: patchSensorLocation,
     onSuccess: () => {
-      queryClient.invalidateQueries(["sensor", "groups"]);
-      queryClient.invalidateQueries(["sensor", "detail", sensorId, appUserId]);
+      queryClient.invalidateQueries({ queryKey: ["sensor", "groups"] });
+      queryClient.invalidateQueries({ queryKey: ["user", "sensor", "groups"] });
+      queryClient.invalidateQueries({
+        queryKey: ["sensor", "detail", sensorId, appUserId],
+      });
     },
   });
 };

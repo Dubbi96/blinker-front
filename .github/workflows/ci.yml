@@ -1,8 +1,18 @@
 name: CI
 
+# develop/staging push 시 빌드 검증만 수행합니다.
+# (기존의 "빌드 성공 시 main으로 자동 force-push" 단계는 제거됨 —
+#  main push는 곧 Vercel Production(운영) 배포이므로,
+#  운영 반영은 staging 검증 완료 후 staging → main PR merge로만 진행합니다.)
+
 on:
   push:
-    branches: develop
+    branches:
+      - develop
+      - staging
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -26,18 +36,3 @@ jobs:
 
       # - name: test
       #   run: npm test
-
-      # push 작업을 위한 사용자 계정 정보 설정
-      - name: Config Github Setting
-        run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-
-      # 빌드가 성공했을 경우 main으로 자동 push
-      - name: Push to main
-        if: success()
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
-          force: true

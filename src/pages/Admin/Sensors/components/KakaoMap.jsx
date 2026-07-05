@@ -5,9 +5,10 @@ import {
   resetSelectedSensor,
   setSelectedSensorState,
 } from "@store/selectedSensorSlice";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  CustomOverlayMap,
   Map,
   MapMarker,
   MapTypeId,
@@ -41,20 +42,66 @@ const SensorsKakaoMap = ({ sensors }) => {
   const [isDraggable, setIsDraggable] = useState(false);
   const [draggedPosition, setDraggedPosition] = useState();
 
+  const selectedGroupSensors =
+    selectedSensor && sensors
+      ? sensors.filter(
+          (sensor) => sensor.sensorGroupId === selectedSensor.sensorGroupId
+        )
+      : [];
+
+  const getMarkerImage = (sensor, size = 35) => ({
+    src: sensor.needUpdate
+      ? yellowMarker
+      : sensor.status === "정상"
+        ? greenMarker
+        : redMarker,
+    size: {
+      width: size,
+      height: size,
+    },
+  });
+
+  const updateDraggedPosition = (position) => {
+    setDraggedPosition(position);
+    dispatch(setMapPosition(position));
+  };
+
   const handleClickMarker = (sensor) => {
     if (sensor) {
       dispatch(setSelectedSensorState(sensor));
-      setDraggedPosition({
+      updateDraggedPosition({
         lat: sensor.latitude,
         lng: sensor.longitude,
       });
-      dispatch(
-        setMapPosition({
-          lat: sensor.latitude,
-          lng: sensor.longitude,
-        })
-      );
     }
+  };
+
+  const handleClickGroupMarker = (sensor) => {
+    if (!isDraggable) {
+      handleClickMarker(sensor);
+      return;
+    }
+
+    updateDraggedPosition({
+      lat: sensor.latitude,
+      lng: sensor.longitude,
+    });
+  };
+
+  const handleClickMap = (_, mouseEvent) => {
+    const latlng = mouseEvent.latLng;
+    const newPosition = {
+      lat: latlng.getLat(),
+      lng: latlng.getLng(),
+    };
+
+    if (isDraggable) {
+      updateDraggedPosition(newPosition);
+      return;
+    }
+
+    dispatch(resetSelectedSensor());
+    dispatch(setMapPosition(newPosition));
   };
 
   const handleCloseInfoWindow = () => {
@@ -69,7 +116,7 @@ const SensorsKakaoMap = ({ sensors }) => {
 
   // 새로운 위치 저장
   const handleSaveNewPosition = async () => {
-    if (!draggedPosition) return;
+    if (!selectedSensor?.sensorId || !draggedPosition) return;
     await patchSensorLocation({
       sensorId: selectedSensor.sensorId,
       latitude: draggedPosition.lat,
@@ -79,11 +126,10 @@ const SensorsKakaoMap = ({ sensors }) => {
         showToast.success("위치가 변경되었습니다.");
 
         // selectedSensor 업데이트
-        let relocatedSensor = sensors?.find(
-          (sensor) => sensor.sensorId === selectedSensor.sensorId
-        );
-        relocatedSensor = {
-          ...relocatedSensor,
+        const relocatedSensor = {
+          ...(sensors?.find(
+            (sensor) => sensor.sensorId === selectedSensor.sensorId
+          ) ?? selectedSensor),
           latitude: draggedPosition.lat,
           longitude: draggedPosition.lng,
         };
@@ -100,6 +146,7 @@ const SensorsKakaoMap = ({ sensors }) => {
 
   // 위치 편집 모드 종료 시 selectedSensor 기준으로 초기화
   const handleClickOffDraggable = () => {
+    if (!selectedSensor) return;
     setIsDraggable(false);
     setDraggedPosition();
     dispatch(
@@ -112,6 +159,14 @@ const SensorsKakaoMap = ({ sensors }) => {
 
   useEffect(() => {
     setIsDraggable(false);
+    setDraggedPosition(
+      selectedSensor
+        ? {
+            lat: selectedSensor.latitude,
+            lng: selectedSensor.longitude,
+          }
+        : undefined
+    );
   }, [selectedSensor]);
 
   return (
@@ -147,16 +202,7 @@ const SensorsKakaoMap = ({ sensors }) => {
             }}
             isPanto={true}
             onCreate={setMap}
-            onClick={(_, mouseEvent) => {
-              const latlng = mouseEvent.latLng;
-              dispatch(resetSelectedSensor());
-              dispatch(
-                setMapPosition({
-                  lat: latlng.getLat(),
-                  lng: latlng.getLng(),
-                })
-              );
-            }}
+            onClick={handleClickMap}
           >
             <ZoomControl />
             {/* 동동이 */}
@@ -213,6 +259,44 @@ const SensorsKakaoMap = ({ sensors }) => {
               </>
             ) : (
               <MarkerClusterer averageCenter={true} minLevel={10}>
+                {isDraggable &&
+                  selectedGroupSensors
+                    .filter(
+                      (sensor) =>
+                        sensor.sensorId !== selectedSensor?.sensorId &&
+                        sensor.latitude != null &&
+                        sensor.longitude != null
+                    )
+                    .map((sensor) => (
+                      <Fragment key={sensor.sensorId}>
+                        <MapMarker
+                          position={{
+                            lat: sensor.latitude,
+                            lng: sensor.longitude,
+                          }}
+                          image={getMarkerImage(sensor, 28)}
+                          onClick={() => handleClickGroupMarker(sensor)}
+                        />
+                        <CustomOverlayMap
+                          position={{
+                            lat: sensor.latitude,
+                            lng: sensor.longitude,
+                          }}
+                          xAnchor={0.5}
+                          yAnchor={1.8}
+                        >
+                          <div
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: "bold",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {sensor.groupPositionNumber}
+                          </div>
+                        </CustomOverlayMap>
+                      </Fragment>
+                    ))}
                 {selectedSensor && (
                   <MapMarker
                     position={{
@@ -225,26 +309,17 @@ const SensorsKakaoMap = ({ sensors }) => {
                           ? draggedPosition.lng
                           : selectedSensor.longitude,
                     }}
-                    image={{
-                      src: selectedSensor.needUpdate
-                        ? yellowMarker
-                        : selectedSensor.status === "정상"
-                          ? greenMarker
-                          : redMarker,
-                      size: {
-                        width: 35,
-                        height: 35,
-                      },
+                    image={getMarkerImage(selectedSensor)}
+                    onClick={() => {
+                      if (!isDraggable) handleClickMarker(selectedSensor);
                     }}
-                    onClick={() => handleClickMarker(selectedSensor)}
                     draggable={isDraggable}
                     onDragEnd={(marker) => {
                       const newPosition = {
                         lat: marker.getPosition().getLat(),
                         lng: marker.getPosition().getLng(),
                       };
-                      setDraggedPosition(newPosition);
-                      dispatch(setMapPosition(newPosition));
+                      updateDraggedPosition(newPosition);
                     }}
                   >
                     <InfoWindow

@@ -13,7 +13,10 @@ export const useDeleteSensorGroupFromUser = () => {
   return useMutation({
     mutationFn: deleteSensorGroupFromUser,
     onSuccess: (data) => {
-      queryClient.invalidateQueries(["sensor", "groups", "unregistered"]);
+      queryClient.invalidateQueries({
+        queryKey: ["sensor", "groups", "unregistered"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["user", "sensor", "groups"] });
     },
   });
 };

@@ -14,7 +14,10 @@ export const usePostSensorGroupToUser = () => {
   return useMutation({
     mutationFn: postSensorGroupToUser,
     onSuccess: (data) => {
-      queryClient.invalidateQueries(["sensor", "groups", "unregistered"]);
+      queryClient.invalidateQueries({
+        queryKey: ["sensor", "groups", "unregistered"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["user", "sensor", "groups"] });
     },
   });
 };
