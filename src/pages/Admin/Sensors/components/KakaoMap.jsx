@@ -259,14 +259,13 @@ const SensorsKakaoMap = ({ sensors }) => {
               </>
             ) : (
               <MarkerClusterer averageCenter={true} minLevel={10}>
-                {isDraggable &&
-                  selectedGroupSensors
-                    .filter(
-                      (sensor) =>
-                        sensor.sensorId !== selectedSensor?.sensorId &&
-                        sensor.latitude != null &&
-                        sensor.longitude != null
-                    )
+                {selectedGroupSensors
+                  .filter(
+                    (sensor) =>
+                      sensor.sensorId !== selectedSensor?.sensorId &&
+                      sensor.latitude != null &&
+                      sensor.longitude != null
+                  )
                     .map((sensor) => (
                       <Fragment key={sensor.sensorId}>
                         <MapMarker
